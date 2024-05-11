@@ -13,9 +13,11 @@ import (
 
 func RunMaster(cfg *config.Config) {
 	log.Info().Msg("Run as Master")
+	checkCluster(cfg)
 	for {
-		time.Sleep(5 * time.Second) // Проверяем состояние каждые 10 секунд
-		if !arbiter.CheckArbiter(cfg) && !database.CheckSlave(cfg) {
+		time.Sleep(1 * time.Second)
+		arbiter, err := arbiter.CheckArbiter(cfg)
+		if err == nil && !arbiter && !database.CheckDB(cfg, database.Slave) {
 			cmd := exec.Command("iptables", "-P", "INPUT", "DROP")
 			err := cmd.Run()
 
@@ -26,5 +28,16 @@ func RunMaster(cfg *config.Config) {
 
 			log.Info().Err(err).Msg("Block input connection to Master")
 		}
+	}
+}
+
+func checkCluster(cfg *config.Config) {
+	for {
+		_, err := arbiter.CheckArbiter(cfg)
+		if err == nil && !database.CheckDB(cfg, database.Slave) {
+			break
+		}
+		log.Info().Msg("Waiting for cluster")
+		time.Sleep(5 * time.Second)
 	}
 }

@@ -28,7 +28,7 @@ func RunArbiter(cfg *config.Config) {
 }
 
 func (s *Server) MasterStatus(c *gin.Context) {
-	result := database.CheckMaster(s.config)
+	result := database.CheckDB(s.config, database.Master)
 	log.Info().Bool("result", result).Msg("Check Master")
 
 	if !result {

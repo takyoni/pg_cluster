@@ -6,6 +6,7 @@ import (
 	"agent/internal/logger"
 	mr "agent/internal/master"
 	sl "agent/internal/slave"
+	"strings"
 
 	_ "github.com/lib/pq"
 	"github.com/rs/zerolog/log"
@@ -21,12 +22,12 @@ func main() {
 	logger.Setup()
 	log.Info().Msg("Success parsed config")
 
-	switch config.ROLE {
-	case "Arbiter":
+	switch strings.ToLower(config.ROLE) {
+	case "arbiter":
 		arb.RunArbiter(config)
-	case "Master":
+	case "master":
 		mr.RunMaster(config)
-	case "Slave":
+	case "slave":
 		sl.RunSlave(config)
 	}
 }
