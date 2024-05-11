@@ -1,8 +1,7 @@
 package arbiter
 
 import (
-	"agent/internal/config"
-	"agent/internal/database"
+	"agent/internal/cluster"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,24 +10,22 @@ import (
 )
 
 type Server struct {
-	config *config.Config
+	ct *cluster.Replicas
 }
 
-func RunArbiter(cfg *config.Config) {
+func RunArbiter(ct *cluster.Replicas) {
 	log.Info().Msg("Run as Arbiter")
-	handler := &Server{config: cfg}
+	handler := &Server{ct: ct}
 
 	server := gin.Default()
 	server.GET("/master", handler.MasterStatus)
-	server.GET("/ping", func(c *gin.Context) {
-		c.JSON(http.StatusOK, "pong")
-	})
+	server.GET("/ping", handler.Ping)
 
 	server.Run(":8080")
 }
 
 func (s *Server) MasterStatus(c *gin.Context) {
-	result := database.CheckDB(s.config, database.Master)
+	result := s.ct.CheckMaster()
 	log.Info().Bool("result", result).Msg("Check Master")
 
 	if !result {
@@ -36,4 +33,9 @@ func (s *Server) MasterStatus(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusOK, gin.H{"master": result})
 	}
+}
+
+func (s *Server) Ping(c *gin.Context) {
+	log.Info().Str("client ip", c.ClientIP()).Msg("Received ping")
+	c.JSON(http.StatusOK, "pong")
 }

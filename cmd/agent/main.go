@@ -2,6 +2,7 @@ package main
 
 import (
 	arb "agent/internal/arbiter"
+	ct "agent/internal/cluster"
 	cfg "agent/internal/config"
 	"agent/internal/logger"
 	mr "agent/internal/master"
@@ -22,12 +23,15 @@ func main() {
 	logger.Setup()
 	log.Info().Msg("Success parsed config")
 
+	cluster := ct.Init(config)
+	defer cluster.Close()
+
 	switch strings.ToLower(config.ROLE) {
 	case "arbiter":
-		arb.RunArbiter(config)
+		arb.RunArbiter(cluster)
 	case "master":
-		mr.RunMaster(config)
+		mr.RunMaster(cluster)
 	case "slave":
-		sl.RunSlave(config)
+		sl.RunSlave(cluster)
 	}
 }

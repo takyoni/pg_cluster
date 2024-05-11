@@ -1,9 +1,7 @@
 package slave
 
 import (
-	"agent/internal/arbiter"
-	"agent/internal/config"
-	"agent/internal/database"
+	"agent/internal/cluster"
 	"os/exec"
 	"time"
 
@@ -11,13 +9,12 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func RunSlave(cfg *config.Config) {
+func RunSlave(ct *cluster.Replicas) {
 	log.Info().Msg("Run as Slave")
-	checkCluster(cfg)
 	for {
-		time.Sleep(1 * time.Second) // Проверяем состояние каждые 10 секунд
-		arbiter, err := arbiter.CheckArbiter(cfg)
-		if err == nil && !arbiter && !database.CheckDB(cfg, database.Master) {
+		time.Sleep(1 * time.Second)
+		arbiter, err := ct.CheckAM()
+		if err == nil && !arbiter && !ct.CheckMaster() {
 			log.Info().Msg("Promote to Master")
 
 			cmd := exec.Command("touch", "/tmp/touch_me_to_promote_to_me_master")
@@ -30,15 +27,5 @@ func RunSlave(cfg *config.Config) {
 
 			log.Info().Err(err).Msg("Error promote to Master")
 		}
-	}
-}
-func checkCluster(cfg *config.Config) {
-	for {
-		_, err := arbiter.CheckArbiter(cfg)
-		if err == nil && !database.CheckDB(cfg, database.Master) {
-			break
-		}
-		log.Info().Msg("Waiting for cluster")
-		time.Sleep(5 * time.Second)
 	}
 }

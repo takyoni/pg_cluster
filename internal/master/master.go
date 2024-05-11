@@ -1,9 +1,7 @@
 package master
 
 import (
-	"agent/internal/arbiter"
-	"agent/internal/config"
-	"agent/internal/database"
+	"agent/internal/cluster"
 	"os/exec"
 	"time"
 
@@ -11,13 +9,14 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func RunMaster(cfg *config.Config) {
+func RunMaster(ct *cluster.Replicas) {
 	log.Info().Msg("Run as Master")
-	checkCluster(cfg)
 	for {
 		time.Sleep(1 * time.Second)
-		arbiter, err := arbiter.CheckArbiter(cfg)
-		if err == nil && !arbiter && !database.CheckDB(cfg, database.Slave) {
+		arbiter, err := ct.CheckArbiter()
+		if err == nil && !arbiter && !ct.CheckSlave() {
+			log.Info().Msg("Start blocking input connection to Master")
+
 			cmd := exec.Command("iptables", "-P", "INPUT", "DROP")
 			err := cmd.Run()
 
@@ -28,16 +27,5 @@ func RunMaster(cfg *config.Config) {
 
 			log.Info().Err(err).Msg("Block input connection to Master")
 		}
-	}
-}
-
-func checkCluster(cfg *config.Config) {
-	for {
-		_, err := arbiter.CheckArbiter(cfg)
-		if err == nil && !database.CheckDB(cfg, database.Slave) {
-			break
-		}
-		log.Info().Msg("Waiting for cluster")
-		time.Sleep(5 * time.Second)
 	}
 }
