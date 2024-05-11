@@ -1,0 +1,59 @@
+
+version: '2'
+
+services:
+  pg-master:
+    build: '.'
+    image: 'postgres-replication'
+    restart: 'always'
+    cap_add:
+      - NET_ADMIN
+    environment:
+      POSTGRES_USER: 'postgres'
+      ROLE: 'Master'
+      ARBITER_HOST: 'pg-arbiter'
+      SLAVE_HOST: 'pg-slave'
+      POSTGRES_PASSWORD: 'postgres'
+      PGDATA: '/var/lib/postgresql/data/pgdata'
+    volumes:
+     - '/var/lib/postgresql/data'
+    expose:
+     - '5432'
+
+  pg-slave:
+    build: '.'
+    image: 'postgres-replication'
+    restart: 'always'
+    cap_add:
+      - NET_ADMIN
+    environment:
+      POSTGRES_USER: 'postgres'
+      ROLE: 'Slave'
+      ARBITER_HOST: 'pg-arbiter'
+      POSTGRES_PASSWORD: 'postgres'
+      PGDATA: '/var/lib/postgresql/data/pgdata'
+      MASTER_HOST: 'pg-master'
+      REPLICATE_FROM: 'pg-master'
+    volumes:
+     - '/var/lib/postgresql/data'
+    expose:
+     - '5432'
+    links:
+     - 'pg-master'
+  pg-arbiter:
+    build: '.'
+    image: 'postgres-replication'
+    restart: 'always'
+    cap_add:
+      - NET_ADMIN
+    environment:
+      POSTGRES_USER: 'postgres'
+      ROLE: 'Arbiter'
+      SLAVE_HOST: 'pg-slave'
+      MASTER_HOST: 'pg-master'
+      POSTGRES_PASSWORD: 'postgres'
+      PGDATA: '/var/lib/postgresql/data/pgdata'
+    volumes:
+     - '/var/lib/postgresql/data'
+    expose:
+     - '5432'
