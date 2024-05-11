@@ -6,10 +6,10 @@ COPY go.* ./
 RUN go mod download
 
 COPY . ./
-
 RUN CGO_ENABLED=0 GOOS=linux go build -o /agent ./cmd/agent
 
 FROM postgres:9.6 AS build-release-stage
+
 COPY --from=build-stage /agent /agent
 
 RUN echo "" > /etc/apt/sources.list.d/pgdg.list
@@ -22,5 +22,4 @@ ENV PG_WAL_KEEP_SEGMENTS 8
 
 COPY ./docker_scripts/setup-replication.sh /docker-entrypoint-initdb.d/
 COPY ./docker_scripts/docker-entrypoint.sh /docker-entrypoint.sh
-
 RUN chmod +x /docker-entrypoint-initdb.d/setup-replication.sh /docker-entrypoint.sh

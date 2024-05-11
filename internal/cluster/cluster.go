@@ -13,11 +13,6 @@ import (
 
 type HostRole int32
 
-const (
-	Master HostRole = iota
-	Slave
-)
-
 type Replicas struct {
 	SlaveConn   *sql.DB
 	MasterConn  *sql.DB
@@ -30,19 +25,11 @@ func Init(cfg *config.Config) *Replicas {
 		var err error
 
 		if cfg.MASTER_HOST != "" {
-			psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-				"password=%s dbname=%s sslmode=disable",
-				cfg.MASTER_HOST, 5432, cfg.POSTGRES_USER, cfg.POSTGRES_PASSWORD, "postgres")
-			replica.MasterConn, err = sql.Open("postgres", psqlInfo)
-			err = replica.MasterConn.Ping()
+			replica.MasterConn, err = connectToDatabase(cfg.MASTER_HOST, cfg.POSTGRES_USER, cfg.POSTGRES_PASSWORD)
 		}
 
 		if cfg.SLAVE_HOST != "" {
-			psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-				"password=%s dbname=%s sslmode=disable",
-				cfg.SLAVE_HOST, 5432, cfg.POSTGRES_USER, cfg.POSTGRES_PASSWORD, "postgres")
-			replica.SlaveConn, err = sql.Open("postgres", psqlInfo)
-			err = replica.SlaveConn.Ping()
+			replica.SlaveConn, err = connectToDatabase(cfg.SLAVE_HOST, cfg.POSTGRES_USER, cfg.POSTGRES_PASSWORD)
 		}
 
 		if cfg.ARBITER_HOST != "" {
@@ -59,6 +46,21 @@ func Init(cfg *config.Config) *Replicas {
 	}
 	return replica
 
+}
+
+func connectToDatabase(host, user, password string) (*sql.DB, error) {
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
+		"password=%s dbname=%s sslmode=disable",
+		host, 5432, user, password, "postgres")
+	db, err := sql.Open("postgres", psqlInfo)
+	if err != nil {
+		return nil, err
+	}
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
 }
 
 func (r *Replicas) CheckMaster() bool {
