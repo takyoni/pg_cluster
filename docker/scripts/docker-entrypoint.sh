@@ -1,5 +1,12 @@
 #!/bin/bash
+
+export $(egrep -v '^#' /app.env | xargs)
 nohup /agent &>/dev/null &
+
+touch /myapp.log
+chmod 777 /myapp.log
+ln -sf /proc/1/fd/1 /myapp.log
+
 # Backwards compatibility for old variable names (deprecated)
 if [ "x$PGUSER"     != "x" ]; then
     POSTGRES_USER=$PGUSER

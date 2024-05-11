@@ -22,6 +22,13 @@ func RunMaster(ct *cluster.Replicas) {
 
 			if err == nil {
 				log.Info().Msg("Success block connections to Master")
+			}
+
+			cmd = exec.Command("iptables-save", ">", "/etc/iptables/rules.v4")
+			err = cmd.Run()
+
+			if err == nil {
+				log.Info().Msg("Success save iptables changes")
 				break
 			}
 
